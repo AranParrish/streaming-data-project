@@ -1,0 +1,7 @@
+venv
+__pycache**
+.pytest**
+.env*
+.terraform*
+*.vscode*
+*.coverage*
