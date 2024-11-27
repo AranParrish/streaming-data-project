@@ -31,10 +31,8 @@ class TestGetAPIKey:
         region = "eu-west-2"
         with caplog.at_level(logging.ERROR):
             get_api_key(invalid_secret_name, region)
-            assert "ClientError" in caplog.text
+            assert "ResourceNotFoundException" in caplog.text
 
-
-# Lookup how to mock secrets manager client and test functionality that way
 
 # API tests
 #   - check that response is 200 (i.e. valid API key)

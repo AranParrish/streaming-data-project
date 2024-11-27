@@ -19,7 +19,7 @@ def get_api_key(secret, region):
         secret_value = json.loads(get_secret_value_response["SecretString"])
         return secret_value
     except ClientError as e:
-        logger.error("ClientError: Invalid secret name or region name")
+        logger.error(e)
 
 
 API_KEY = get_api_key(secret=SECRET_NAME, region=REGION_NAME)
