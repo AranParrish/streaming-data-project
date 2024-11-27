@@ -8,6 +8,7 @@ BASE_URL = "https://content.guardianapis.com/search?order-by=newest&q="
 SECRET_NAME = "guardian_api_key"
 REGION_NAME = "eu-west-2"
 
+
 def get_api_key(secret, region):
 
     session = boto3.session.Session()
@@ -20,7 +21,9 @@ def get_api_key(secret, region):
     except ClientError as e:
         logger.error("ClientError: Invalid secret name or region name")
 
+
 API_KEY = get_api_key(secret=SECRET_NAME, region=REGION_NAME)
+
 
 def streaming_data(search_term, message_broker, date_from=None):
     pass

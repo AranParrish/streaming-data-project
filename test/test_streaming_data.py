@@ -4,6 +4,7 @@ from unittest.mock import Mock, patch
 from botocore.exceptions import ClientError
 from src.streaming_data import get_api_key, streaming_data
 
+
 @pytest.fixture(scope="function")
 def mock_aws_credentials():
     """Mocked AWS Credentials for moto."""
@@ -13,6 +14,7 @@ def mock_aws_credentials():
     os.environ["AWS_SECURITY_TOKEN"] = "test"
     os.environ["AWS_SESSION_TOKEN"] = "test"
     os.environ["AWS_DEFAULT_REGION"] = "eu-west-2"
+
 
 @pytest.mark.describe("Get API key function tests")
 class TestGetAPIKey:
@@ -30,6 +32,7 @@ class TestGetAPIKey:
         with caplog.at_level(logging.ERROR):
             get_api_key(invalid_secret_name, region)
             assert "ClientError" in caplog.text
+
 
 # Lookup how to mock secrets manager client and test functionality that way
 
