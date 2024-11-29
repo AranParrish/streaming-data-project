@@ -67,6 +67,16 @@ class TestAPIResults:
             assert "webTitle" in data.keys()
             assert "webUrl" in data.keys()
 
+    @pytest.mark.it("Returns exact match results")
+    def test_returns_exact_match_results(self):
+        test_search_term = "machine learning"
+        test_message_broker = "guardian_content"
+        result = api_results(test_search_term, test_message_broker, exact_match=True)
+        for data in result:
+            assert "webPublicationDate" in data.keys()
+            assert "webTitle" in data.keys()
+            assert "webUrl" in data.keys()
+
 
 # API tests
 #   - check that response is 200 (i.e. valid API key)

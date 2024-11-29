@@ -25,10 +25,12 @@ def get_api_key(secret, region):
 API_KEY = get_api_key(secret=SECRET_NAME, region=REGION_NAME)
 
 
-def api_results(search_term, message_broker, date_from=None):
+def api_results(search_term, message_broker, date_from=None, exact_match=False):
 
     search_results = []
     html_search_query = search_term.replace(" ", "%20")
+    if exact_match:
+        html_search_query = f'"{html_search_query}"'
 
     api_url = "".join(
         [BASE_URL, html_search_query, "&api-key=", API_KEY["guardian_api_key"]]
