@@ -1,4 +1,4 @@
-import boto3, logging, json
+import boto3, logging, json, requests
 from botocore.exceptions import ClientError
 
 logger = logging.getLogger(__name__)
@@ -25,5 +25,25 @@ def get_api_key(secret, region):
 API_KEY = get_api_key(secret=SECRET_NAME, region=REGION_NAME)
 
 
-def streaming_data(search_term, message_broker, date_from=None):
-    pass
+def api_results(search_term, message_broker, date_from=None):
+
+    search_results = []
+    html_search_query = search_term.replace(" ", "%20")
+
+    api_url = "".join(
+        [BASE_URL, html_search_query, "&api-key=", API_KEY["guardian_api_key"]]
+    )
+
+    api_response = requests.get(api_url)
+    if api_response.status_code == 200:
+
+        json_response = json.loads(api_response.text)
+        for result in json_response["response"]["results"]:
+            selected_data = {
+                "webPublicationDate": result["webPublicationDate"],
+                "webTitle": result["webTitle"],
+                "webUrl": result["webUrl"],
+            }
+            search_results.append(selected_data)
+
+    return search_results
