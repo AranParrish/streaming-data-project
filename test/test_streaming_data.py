@@ -1,7 +1,6 @@
-import pytest, boto3, logging, os
+import pytest, boto3, logging, os, json
 from moto import mock_aws
 from unittest.mock import Mock, patch
-from botocore.exceptions import ClientError
 from src.streaming_data import get_api_key, api_results
 
 
@@ -25,7 +24,7 @@ class TestGetAPIKey:
         region = "eu-west-2"
         assert isinstance(get_api_key(secret_name, region), dict)
 
-    @pytest.mark.it("Logs ClientError for invalid secret name")
+    @pytest.mark.it("Logs ResourceNotFoundException for invalid secret name")
     def test_retrieve_secret_invalid_name(self, caplog):
         invalid_secret_name = "invalid_secret_name"
         region = "eu-west-2"
@@ -41,41 +40,56 @@ class TestAPIResults:
     def test_inputs_not_mutated(self):
         test_search_term = "machine learning"
         copy_test_search_term = "machine learning"
-        test_message_broker = "guardian_content"
-        copy_test_message_broker = "guardian_content"
         test_date_from = "2023-01-01"
         copy_test_date_from = "2023-01-01"
-        api_results(test_search_term, test_message_broker, test_date_from)
+        test_exact_match = False
+        copy_test_exact_match = False
+        api_results(test_search_term, test_date_from, test_exact_match)
         assert test_search_term == copy_test_search_term
-        assert test_message_broker == copy_test_message_broker
         assert test_date_from == copy_test_date_from
+        assert test_exact_match == copy_test_exact_match
 
     @pytest.mark.it("Result is a list not exceeding 10 in length")
     def test_result_is_list_of_10_or_fewer(self):
         test_search_term = "machine learning"
-        test_message_broker = "guardian_content"
-        result = api_results(test_search_term, test_message_broker)
+        test_from_date = None
+        test_exact_match = False
+        result = api_results(test_search_term, test_from_date, test_exact_match)
         assert len(result) <= 10
 
     @pytest.mark.it("Results contain correct fields")
     def test_results_contain_correct_fields(self):
         test_search_term = "machine learning"
-        test_message_broker = "guardian_content"
-        result = api_results(test_search_term, test_message_broker)
+        test_from_date = None
+        test_exact_match = False
+        result = api_results(test_search_term, test_from_date, test_exact_match)
         for data in result:
             assert "webPublicationDate" in data.keys()
             assert "webTitle" in data.keys()
             assert "webUrl" in data.keys()
 
-    @pytest.mark.it("Returns exact match results")
-    def test_returns_exact_match_results(self):
+    @pytest.mark.it("Logs error for invalid api key")
+    def test_logs_error_invalid_api_key(self, caplog):
         test_search_term = "machine learning"
-        test_message_broker = "guardian_content"
-        result = api_results(test_search_term, test_message_broker, exact_match=True)
-        for data in result:
-            assert "webPublicationDate" in data.keys()
-            assert "webTitle" in data.keys()
-            assert "webUrl" in data.keys()
+        test_from_date = None
+        test_exact_match = False
+        with patch("src.streaming_data.requests.get") as mock_request:
+            mock_request.return_value.status_code = 401
+            with caplog.at_level(logging.ERROR):
+                api_results(test_search_term, test_from_date, test_exact_match)
+            assert "Invalid api key" in caplog.text
+
+    @pytest.mark.it("Logs HTTP error for other api responses")
+    def test_logs_HTTP_error(self, caplog):
+        test_search_term = "machine learning"
+        test_from_date = None
+        test_exact_match = False
+        with patch("src.streaming_data.requests.get") as mock_request:
+            mock_request.return_value.status_code = 500
+            mock_request.return_value.text = json.dumps("404 Not Found")
+            with caplog.at_level(logging.ERROR):
+                api_results(test_search_term, test_from_date, test_exact_match)
+            assert "404 Not Found" in caplog.text
 
 
 # API tests

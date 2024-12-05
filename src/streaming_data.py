@@ -25,7 +25,7 @@ def get_api_key(secret, region):
 API_KEY = get_api_key(secret=SECRET_NAME, region=REGION_NAME)
 
 
-def api_results(search_term, message_broker, date_from=None, exact_match=False):
+def api_results(search_term, date_from, exact_match):
 
     search_results = []
     html_search_query = search_term.replace(" ", "%20")
@@ -37,8 +37,8 @@ def api_results(search_term, message_broker, date_from=None, exact_match=False):
     )
 
     api_response = requests.get(api_url)
-    if api_response.status_code == 200:
 
+    if api_response.status_code == 200:
         json_response = json.loads(api_response.text)
         for result in json_response["response"]["results"]:
             selected_data = {
@@ -47,5 +47,19 @@ def api_results(search_term, message_broker, date_from=None, exact_match=False):
                 "webUrl": result["webUrl"],
             }
             search_results.append(selected_data)
+        logger.info(
+            f"""Succesfully got results from guardian_api for '{search_term}'
+         (Date from = {date_from}, Exact match = {exact_match})"""
+        )
+        return search_results
 
-    return search_results
+    if api_response.status_code == 401:
+        logger.error("Invalid api key")
+
+    else:
+        json_response = json.loads(api_response.text)
+        logger.error(json_response)
+
+
+def streaming_data(search_term, message_broker_id, date_from=None, exact_match=False):
+    pass
