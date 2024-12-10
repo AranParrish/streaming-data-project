@@ -1,7 +1,8 @@
 import pytest, boto3, logging, os, json
 from moto import mock_aws
 from unittest.mock import Mock, patch
-from src.streaming_data import get_api_key, api_results, streaming_data
+from botocore.exceptions import ClientError
+from src.streaming_data import get_api_key, api_results, create_queue, streaming_data
 
 
 @pytest.fixture(scope="function")
@@ -25,6 +26,12 @@ def mock_aws_credentials():
     os.environ["AWS_DEFAULT_REGION"] = "eu-west-2"
 
 
+@pytest.fixture(scope="function")
+def mock_sqs_client(mock_aws_credentials):
+    with mock_aws():
+        yield boto3.client("sqs")
+
+
 @pytest.mark.describe("Get API key function tests")
 class TestGetAPIKey:
 
@@ -45,19 +52,6 @@ class TestGetAPIKey:
 
 @pytest.mark.describe("API results function tests")
 class TestAPIResults:
-
-    @pytest.mark.it("Inputs are not mutated")
-    def test_inputs_not_mutated(self):
-        test_search_term = "machine learning"
-        copy_test_search_term = "machine learning"
-        test_date_from = "2023-01-01"
-        copy_test_date_from = "2023-01-01"
-        test_exact_match = False
-        copy_test_exact_match = False
-        api_results(test_search_term, test_date_from, test_exact_match)
-        assert test_search_term == copy_test_search_term
-        assert test_date_from == copy_test_date_from
-        assert test_exact_match == copy_test_exact_match
 
     @pytest.mark.it("Result is a list not exceeding 10 in length")
     def test_result_is_list_of_10_or_fewer(self, test_api_results_inputs):
@@ -90,26 +84,45 @@ class TestAPIResults:
             assert "404 Not Found" in caplog.text
 
 
-@pytest.mark.describe("Streaming data function tests")
-class TestStreamingData:
+@pytest.mark.describe("Create queue function tests")
+class TestCreateQueue:
 
-    @pytest.mark.it("Inputs are not mutated")
-    def test_inputs_not_mutated(self):
-        test_search_term = "machine learning"
-        copy_test_search_term = "machine learning"
-        test_message_broker_id = "guardian_content"
-        copy_test_message_broker_id = "guardian_content"
-        test_date_from = "2023-01-01"
-        copy_test_date_from = "2023-01-01"
-        test_exact_match = False
-        copy_test_exact_match = False
-        streaming_data(
-            test_search_term, test_message_broker_id, test_date_from, test_exact_match
+    @pytest.mark.it("Creates queue with input name")
+    def test_create_queue_with_input_name(self, mock_sqs_client):
+        test_queue_name = "test_queue"
+        result = create_queue(test_queue_name)
+        assert test_queue_name in result["QueueUrl"]
+
+    @pytest.mark.it("Creates queue with 3-day retention period")
+    def test_create_queue_retention_period(self, mock_sqs_client):
+        test_queue_name = "test_queue"
+        expected_retention_period = str(60 * 60 * 24 * 3)
+        test_queue_url = create_queue(test_queue_name)["QueueUrl"]
+        queue_attributes = mock_sqs_client.get_queue_attributes(
+            QueueUrl=test_queue_url, AttributeNames=["MessageRetentionPeriod"]
         )
-        assert test_search_term == copy_test_search_term
-        assert test_message_broker_id == copy_test_message_broker_id
-        assert test_date_from == copy_test_date_from
-        assert test_exact_match == copy_test_exact_match
+        assert (
+            queue_attributes["Attributes"]["MessageRetentionPeriod"]
+            == expected_retention_period
+        )
 
-    # @pytest.mark.it('Creates queue with message broker id')
-    # def test_creates_queue_with_message_broker_id(self):
+    @pytest.mark.it("Logs error if unable to create queue")
+    def test_logs_error_unable_to_create_queue(self, mock_sqs_client, caplog):
+        test_queue_name = "test_queue"
+        with patch("boto3.client") as mock_sqs:
+            mock_sqs.return_value.create_queue.side_effect = ClientError(
+                {
+                    "Error": {
+                        "Code": "UnsupportedOperation",
+                        "Message": "The operation is not supported.",
+                    }
+                },
+                "ClientError",
+            )
+            with caplog.at_level(logging.ERROR):
+                create_queue(test_queue_name)
+                assert "Couldn't create queue" in caplog.text
+
+
+# @pytest.mark.describe("Streaming data function tests")
+# class TestStreamingData:

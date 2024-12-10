@@ -61,5 +61,26 @@ def api_results(search_term, date_from, exact_match):
         logger.error(json_response)
 
 
+def create_queue(name):
+    """
+    Creates an Amazon SQS queue that persists for 3 days.
+
+    :param name: The name of the queue. This is part of the URL assigned to the queue.
+    :return: A Queue object that contains metadata about the queue and that can be used
+             to perform queue operations like sending and receiving messages.
+    """
+    sqs = boto3.client("sqs")
+    try:
+        queue = sqs.create_queue(
+            QueueName=name, Attributes={"MessageRetentionPeriod": "259200"}
+        )
+        logger.info(f"Created queue '{name}' with URL={queue['QueueUrl']}")
+        print(queue["QueueUrl"])
+    except ClientError as error:
+        logger.error(f"Couldn't create queue named '{name}'. {error}.")
+    else:
+        return queue
+
+
 def streaming_data(search_term, message_broker_id, date_from=None, exact_match=False):
     pass
