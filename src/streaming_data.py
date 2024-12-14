@@ -11,11 +11,10 @@ REGION_NAME = "eu-west-2"
 
 def get_api_key(secret, region):
 
-    session = boto3.session.Session()
-    client = session.client(service_name="secretsmanager", region_name=region)
+    sm = boto3.client("secretsmanager")
 
     try:
-        get_secret_value_response = client.get_secret_value(SecretId=secret)
+        get_secret_value_response = sm.get_secret_value(SecretId=secret)
         secret_value = json.loads(get_secret_value_response["SecretString"])
         return secret_value
     except ClientError as e:
@@ -75,12 +74,32 @@ def create_queue(name):
             QueueName=name, Attributes={"MessageRetentionPeriod": "259200"}
         )
         logger.info(f"Created queue '{name}' with URL={queue['QueueUrl']}")
-        print(queue["QueueUrl"])
+        return queue["QueueUrl"]
     except ClientError as error:
         logger.error(f"Couldn't create queue named '{name}'. {error}.")
-    else:
-        return queue
 
 
 def streaming_data(search_term, message_broker_id, date_from=None, exact_match=False):
-    pass
+
+    api_content = api_results(search_term, date_from, exact_match)
+    query_results = {
+        "ID": message_broker_id,
+        "Search Term": search_term,
+        "Date From": date_from,
+        "Exact Match?": exact_match,
+        "Results": api_content,
+    }
+    json_query_results = json.dumps(query_results)
+
+    queue_url = create_queue("guardian_content_queue")
+    sqs = boto3.client("sqs")
+    try:
+        sqs.send_message(QueueUrl=queue_url, MessageBody=json_query_results)
+        logger.info(
+            f"""Successfully added API results to queue for '{search_term}'
+         (Date from = {date_from}, Exact match = {exact_match}) with the ID '{message_broker_id}'"""
+        )
+    except ClientError as error:
+        logger.error(f"Failed to store API results in queue {queue_url}. {error}")
+
+    return queue_url

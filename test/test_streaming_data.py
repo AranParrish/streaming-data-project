@@ -91,13 +91,13 @@ class TestCreateQueue:
     def test_create_queue_with_input_name(self, mock_sqs_client):
         test_queue_name = "test_queue"
         result = create_queue(test_queue_name)
-        assert test_queue_name in result["QueueUrl"]
+        assert test_queue_name in result
 
     @pytest.mark.it("Creates queue with 3-day retention period")
     def test_create_queue_retention_period(self, mock_sqs_client):
         test_queue_name = "test_queue"
         expected_retention_period = str(60 * 60 * 24 * 3)
-        test_queue_url = create_queue(test_queue_name)["QueueUrl"]
+        test_queue_url = create_queue(test_queue_name)
         queue_attributes = mock_sqs_client.get_queue_attributes(
             QueueUrl=test_queue_url, AttributeNames=["MessageRetentionPeriod"]
         )
@@ -117,12 +117,58 @@ class TestCreateQueue:
                         "Message": "The operation is not supported.",
                     }
                 },
-                "ClientError",
+                "CreateQueue operation",
             )
             with caplog.at_level(logging.ERROR):
                 create_queue(test_queue_name)
                 assert "Couldn't create queue" in caplog.text
 
 
-# @pytest.mark.describe("Streaming data function tests")
-# class TestStreamingData:
+@pytest.mark.describe("Streaming data function tests")
+class TestStreamingData:
+
+    @pytest.mark.it("Successfully posts API results to SQS queue")
+    def test_successfully_posts_api_results_to_queue(
+        self, test_streaming_data_inputs, mock_sqs_client, caplog
+    ):
+        with caplog.at_level(logging.INFO):
+            streaming_data(**test_streaming_data_inputs)
+            assert "Successfully added API results to queue" in caplog.text
+
+    @pytest.mark.it("Data stored in SQS queue is JSON data")
+    def test_queue_data_is_json(
+        self, test_streaming_data_inputs, mock_sqs_client, caplog
+    ):
+        queue_url = streaming_data(**test_streaming_data_inputs)
+        queue_contents = mock_sqs_client.receive_message(QueueUrl=queue_url)
+        assert json.loads(queue_contents["Messages"][0]["Body"]) != ValueError
+
+    @pytest.mark.it("Data stored in SQS queue is expected format")
+    def test_data_in_expected_format(self, test_streaming_data_inputs, mock_sqs_client):
+        queue_url = streaming_data(**test_streaming_data_inputs)
+        queue_contents = mock_sqs_client.receive_message(QueueUrl=queue_url)
+        message_contents = json.loads(queue_contents["Messages"][0]["Body"])
+        assert "ID" in message_contents.keys()
+        assert "Search Term" in message_contents.keys()
+        for result in message_contents["Results"]:
+            assert "webPublicationDate" in result.keys()
+            assert "webTitle" in result.keys()
+            assert "webUrl" in result.keys()
+
+    @pytest.mark.it("Logs error if unable to send message")
+    def test_logs_error_if_unable_to_send_message(
+        self, test_streaming_data_inputs, mock_sqs_client, caplog
+    ):
+        with patch("boto3.client") as mock_sqs:
+            mock_sqs.return_value.send_message.side_effect = ClientError(
+                {
+                    "Error": {
+                        "Code": "AWS.SimpleQueueService.NonExistentQueue",
+                        "Message": "The specified queue does not exist for this wsdl version.",
+                    }
+                },
+                "SendMessage",
+            )
+            with caplog.at_level(logging.ERROR):
+                streaming_data(**test_streaming_data_inputs)
+                assert "Failed to store API results" in caplog.text
