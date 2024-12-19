@@ -6,10 +6,9 @@ logger.setLevel(logging.INFO)
 
 BASE_URL = "https://content.guardianapis.com/search?order-by=newest&q="
 SECRET_NAME = "guardian_api_key"
-REGION_NAME = "eu-west-2"
 
 
-def get_api_key(secret, region):
+def get_api_key(secret):
 
     sm = boto3.client("secretsmanager")
 
@@ -21,7 +20,7 @@ def get_api_key(secret, region):
         logger.error(e)
 
 
-API_KEY = get_api_key(secret=SECRET_NAME, region=REGION_NAME)
+API_KEY = get_api_key(secret=SECRET_NAME)
 
 
 def api_results(search_term, date_from, exact_match):

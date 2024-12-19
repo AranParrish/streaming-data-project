@@ -38,15 +38,13 @@ class TestGetAPIKey:
     @pytest.mark.it("Retrieves key for valid secret name")
     def tests_retrieve_secret_valid_name(self):
         secret_name = "guardian_api_key"
-        region = "eu-west-2"
-        assert isinstance(get_api_key(secret_name, region), dict)
+        assert isinstance(get_api_key(secret_name), dict)
 
     @pytest.mark.it("Logs ResourceNotFoundException for invalid secret name")
     def test_retrieve_secret_invalid_name(self, caplog):
         invalid_secret_name = "invalid_secret_name"
-        region = "eu-west-2"
         with caplog.at_level(logging.ERROR):
-            get_api_key(invalid_secret_name, region)
+            get_api_key(invalid_secret_name)
             assert "ResourceNotFoundException" in caplog.text
 
 
