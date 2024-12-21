@@ -64,6 +64,43 @@ class TestAPIResults:
             assert "webTitle" in data.keys()
             assert "webUrl" in data.keys()
 
+    @pytest.mark.it("Returns exact match results")
+    def test_returns_exact_match_results(self):
+        test_exact_match_inputs = {
+            "search_term": "machine learning",
+            "date_from": None,
+            "exact_match": True,
+        }
+        result = api_results(**test_exact_match_inputs)
+        for data in result:
+            assert "webPublicationDate" in data.keys()
+            assert "webTitle" in data.keys()
+            assert "webUrl" in data.keys()
+
+    @pytest.mark.it("Returns results for valid date_from")
+    def test_returns_for_valid_date_from_string(self):
+        test_inputs_valid_date_from = {
+            "search_term": "machine learning",
+            "date_from": "2024-01-01",
+            "exact_match": False,
+        }
+        result = api_results(**test_inputs_valid_date_from)
+        for data in result:
+            assert "webPublicationDate" in data.keys()
+            assert "webTitle" in data.keys()
+            assert "webUrl" in data.keys()
+
+    @pytest.mark.it("Logs error for invalid date_from")
+    def test_returns_for_valid_date_from_string(self, caplog):
+        test_inputs_invalid_date_from = {
+            "search_term": "machine learning",
+            "date_from": "not_a_date",
+            "exact_match": False,
+        }
+        with caplog.at_level(logging.ERROR):
+            api_results(**test_inputs_invalid_date_from)
+        assert "Dates must be an ISO8601 date or datetime" in caplog.text
+
     @pytest.mark.it("Logs error for invalid api key")
     def test_logs_error_invalid_api_key(self, caplog, test_api_results_inputs):
         with patch("src.streaming_data.requests.get") as mock_request:

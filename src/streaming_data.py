@@ -34,6 +34,9 @@ def api_results(search_term, date_from, exact_match):
         [BASE_URL, html_search_query, "&api-key=", API_KEY["guardian_api_key"]]
     )
 
+    if date_from:
+        api_url = "".join([api_url, "&from-date=", date_from])
+
     api_response = requests.get(api_url)
 
     if api_response.status_code == 200:
