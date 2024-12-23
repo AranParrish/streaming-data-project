@@ -20,7 +20,6 @@ def get_api_key(secret) -> dict:
 
     Error logs:
         ClientError message if unable to retrieve secret(s)
-    
     """
 
     sm = boto3.client("secretsmanager")
@@ -55,7 +54,6 @@ def api_results(search_term, date_from, exact_match) -> list:
     Error logs:
         Logs 'invalid api key' if server returns a 401 response.
         Logs the response text for all other errors.
-    
     """
 
     search_results = []
@@ -131,14 +129,14 @@ def streaming_data(search_term, message_broker_id, date_from=None, exact_match=F
         message_broker_id: ID used to identify the search results by any consuming application (string)
         date_from (optional): Allows search results to be limited to those after this date (datetime or date_string)
         exact_match (optional): Determine whether to do an exact match of the search string (boolean)
-    
+
     Returns:
         queue_url: The URL of the queue to enable consuming applications to retrieve the results
 
     Error logs:
         AWS ClientError if unable to add query results to the AWS SQS queue.
     """
-    
+
     api_content = api_results(search_term, date_from, exact_match)
     query_results = {
         "ID": message_broker_id,
