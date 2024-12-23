@@ -9,7 +9,19 @@ SECRET_NAME = "guardian_api_key"
 SECRET_KEY = "guardian_api_key"
 
 
-def get_api_key(secret):
+def get_api_key(secret) -> dict:
+    """Retrieves input secret from AWS Secrets Manager
+
+    Args:
+        secret: AWS secret name (string)
+
+    Returns:
+        A dictionary with the key-value pairs of the secret(s)
+
+    Error logs:
+        ClientError message if unable to retrieve secret(s)
+    
+    """
 
     sm = boto3.client("secretsmanager")
 
@@ -24,7 +36,27 @@ def get_api_key(secret):
 API_KEY = get_api_key(secret=SECRET_NAME)[SECRET_KEY]
 
 
-def api_results(search_term, date_from, exact_match):
+def api_results(search_term, date_from, exact_match) -> list:
+    """Gets search term results from Guardian API
+
+    Extracts the search results from Guardian API for the given search term.
+    Limits results to those after a certain date if given.  Can run the search
+    as an exact match or not.  Returns 10 most recent results.
+
+    Args:
+        search_term: The search term to be queried (string)
+        date_from: Limit results to those after this date if truthy (None, string, datetime)
+        exact_match: Whether to run the search term as an exact match (boolean)
+
+    Returns:
+        Search results with a dictionary giving the publication date, article title,
+        and web url for each result(list)
+
+    Error logs:
+        Logs 'invalid api key' if server returns a 401 response.
+        Logs the response text for all other errors.
+    
+    """
 
     search_results = []
     html_search_query = search_term.replace(" ", "%20")
@@ -62,13 +94,18 @@ def api_results(search_term, date_from, exact_match):
 
 
 def create_queue(name):
-    """
-    Creates an Amazon SQS queue that persists for 3 days.
+    """Creates an Amazon SQS queue that persists for 3 days.
 
-    :param name: The name of the queue. This is part of the URL assigned to the queue.
-    :return: A Queue object that contains metadata about the queue and that can be used
-             to perform queue operations like sending and receiving messages.
+    Args:
+        name: The name of the queue. This is part of the URL assigned to the queue.
+    Returns:
+        A Queue object that contains metadata about the queue and that can be used
+        to perform queue operations like sending and receiving messages.
+
+    Error logs:
+        Returns AWS error log if attempted queue creation fails.
     """
+
     sqs = boto3.client("sqs")
     try:
         queue = sqs.create_queue(
@@ -81,7 +118,27 @@ def create_queue(name):
 
 
 def streaming_data(search_term, message_broker_id, date_from=None, exact_match=False):
+    """Main function that stores search results from the Guardian in an AWS queue.
 
+    Uses helper function "api_results" to obtain article results from the Guardian
+    and adds these along with additional query info to be posted in JSON format to
+    the message broker.  Then uses the helper function "create_queue" to generate an
+    AWS SQS queue named "guardian_content_queue".  Finally, posts query result to the
+    queue.
+
+    Args:
+        search_term: The article search term (string)
+        message_broker_id: ID used to identify the search results by any consuming application (string)
+        date_from (optional): Allows search results to be limited to those after this date (datetime or date_string)
+        exact_match (optional): Determine whether to do an exact match of the search string (boolean)
+    
+    Returns:
+        queue_url: The URL of the queue to enable consuming applications to retrieve the results
+
+    Error logs:
+        AWS ClientError if unable to add query results to the AWS SQS queue.
+    """
+    
     api_content = api_results(search_term, date_from, exact_match)
     query_results = {
         "ID": message_broker_id,
