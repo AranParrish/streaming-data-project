@@ -33,14 +33,7 @@ The results stored are up to the 10 most recent articles.  Data is persisted in 
 
 1. Fork and clone this repo
 2. Store your Guardian API key in your AWS Secrets Manager.  Assign the name of this secret to the global variable "SECRET_NAME" and the key to the global variable "SECRET_KEY".
-
-### Cloud deployment
-
-1. Deploy the code as part of your application (e.g. as an AWS Lambda function).  The entry point is the function streaming_data, but you will need to include the remainder of the code as this function uses other helper functions to run as well as global variables.
-2. Pass your search_term and message_broker_ID to the streaming_data function.  You can optionally pass the date_from argument (as a datetime or a valid ISO 8601 format date string) and/or the exact_match argument (boolean).
+3. Deploy the code as part of your application (e.g. as an AWS Lambda function).  The entry point is the function streaming_data, but you will need to include the remainder of the code as this function uses other helper functions to run as well as global variables.
+4. Pass your search_term and message_broker_ID to the streaming_data function.  You can optionally pass the date_from argument (as a datetime or a valid ISO 8601 format date string) and/or the exact_match argument (boolean).
 
 After successfully executing, your search results will be stored in an AWS SQS queue named "guardian_content_queue" with the passed in message broker ID.  Any errors will be logged, as will info on each successful stage.
-
-### Local deployment
-
-TBD
