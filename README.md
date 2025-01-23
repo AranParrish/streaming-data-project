@@ -39,18 +39,17 @@ Before deploying this code, it is recommended that you take a local copy to make
 1. Fork and clone this repo.
 2. Ensure you have Make installed.
 3. From the root directory, run "make requirements".  This will create a virtual environment with the necessary dependencies (compiled from the file "requirements.in" and then installed from "requirements.txt").
-4. Next, run "make dev-setup".  This will install "bandit" and "safety" to do security tests, as well as "black" to ensure code is PEP8 compliant, and finally "coverage" to check test coverage.  Note that you will need a safety account (you should be prompted to register or login when first attempting to run the test suite, as detailed in stage 6 below).
-5. Store your Guardian API key in your AWS Secrets Manager.  Assign the name of this secret to the global variable "SECRET_NAME" and the key to the global variable "SECRET_KEY".  Ensure that your AWS credentials are configured in your local development environment (e.g. your "config" and "credentials" files are set in the directory "~/.aws").
-6. To execute the full range of checks (security tests, PEP8 compliance, and the test suite), run "make run-checks".
+4. Next, run "make dev-setup".  This will install "bandit" and "safety" to do security tests, as well as "black" to ensure code is PEP8 compliant, and finally "coverage" to check test coverage.  Note that you will need a safety account (you should be prompted to register or login when first attempting to run the test suite, as detailed in stage 5 below).
+5. To execute the full range of checks (security tests, PEP8 compliance, and the test suite), run "make run-checks".
 
 The provided source code (stored in the "src" folder) and test suite (stored in the "test" folder) gives a test coverage of 100%.  If you make any further refinements to the source code, you should ensure these are tested prior to deployment.
 
 ## Cloud deployment
 
-If you have already done the "Local environment setup", you can skip steps 1 and 2.  Instead, deploy the application from your local environment, which should have already been setup with your Guardian API details.
+If you have already done the "Local environment setup", you can skip step 1 and instead deploy the application from your local environment.
 
 1. Fork and clone this repo.
-2. Store your Guardian API key in your AWS Secrets Manager.  Assign the name of this secret to the global variable "SECRET_NAME" and the key to the global variable "SECRET_KEY".
+2. Store your Guardian API key in your AWS Secrets Manager with the name "guardian_api_key" with as a key-value pair with the key also named "guardian_api_key" and your Guardian API key assigned to the value.  Ensure that your AWS credentials are configured in your local development environment (e.g. your "config" and "credentials" files are set in the directory "~/.aws").
 3. Deploy the code as part of your application (e.g. as an AWS Lambda function).  The entry point is the function streaming_data, but you will need to include the remainder of the code as this function uses other helper functions to run as well as global variables.
 4. Pass your search_term and message_broker_ID to the streaming_data function.  You can optionally pass the date_from argument (as a datetime or a valid ISO 8601 format date string) and/or the exact_match argument (boolean).
 
