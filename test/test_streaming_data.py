@@ -27,6 +27,20 @@ def mock_aws_credentials():
 
 
 @pytest.fixture(scope="function")
+def mock_sm_client(mock_aws_credentials):
+    with mock_aws():
+        yield boto3.client("secretsmanager")
+
+
+@pytest.fixture(scope="function")
+def test_guardian_api_key(mock_sm_client):
+    mock_sm_client.create_secret(
+        Name="guardian_api_key",
+        SecretString='{"guardian_api_key": "test"}',
+    )
+
+
+@pytest.fixture(scope="function")
 def mock_sqs_client(mock_aws_credentials):
     with mock_aws():
         yield boto3.client("sqs")
@@ -36,12 +50,16 @@ def mock_sqs_client(mock_aws_credentials):
 class TestGetAPIKey:
 
     @pytest.mark.it("Retrieves key for valid secret name")
-    def tests_retrieve_secret_valid_name(self):
+    def tests_retrieve_secret_valid_name(self, mock_sm_client, test_guardian_api_key):
         secret_name = "guardian_api_key"
-        assert isinstance(get_api_key(secret_name), dict)
+        response = get_api_key(secret_name)
+        assert isinstance(response, dict)
+        assert response["guardian_api_key"] == "test"
 
     @pytest.mark.it("Logs ResourceNotFoundException for invalid secret name")
-    def test_retrieve_secret_invalid_name(self, caplog):
+    def test_retrieve_secret_invalid_name(
+        self, caplog, mock_sm_client, test_guardian_api_key
+    ):
         invalid_secret_name = "invalid_secret_name"
         with caplog.at_level(logging.ERROR):
             get_api_key(invalid_secret_name)
@@ -52,12 +70,16 @@ class TestGetAPIKey:
 class TestAPIResults:
 
     @pytest.mark.it("Result is a list not exceeding 10 in length")
-    def test_result_is_list_of_10_or_fewer(self, test_api_results_inputs):
+    def test_result_is_list_of_10_or_fewer(
+        self, test_api_results_inputs, mock_sm_client, test_guardian_api_key
+    ):
         result = api_results(**test_api_results_inputs)
         assert len(result) <= 10
 
     @pytest.mark.it("Results contain correct fields")
-    def test_results_contain_correct_fields(self, test_api_results_inputs):
+    def test_results_contain_correct_fields(
+        self, test_api_results_inputs, mock_sm_client, test_guardian_api_key
+    ):
         result = api_results(**test_api_results_inputs)
         for data in result:
             assert "webPublicationDate" in data.keys()
@@ -65,7 +87,7 @@ class TestAPIResults:
             assert "webUrl" in data.keys()
 
     @pytest.mark.it("Returns exact match results")
-    def test_returns_exact_match_results(self):
+    def test_returns_exact_match_results(self, mock_sm_client, test_guardian_api_key):
         test_exact_match_inputs = {
             "search_term": "machine learning",
             "date_from": None,
@@ -78,7 +100,9 @@ class TestAPIResults:
             assert "webUrl" in data.keys()
 
     @pytest.mark.it("Returns results for valid date_from")
-    def test_returns_for_valid_date_from_string(self):
+    def test_returns_for_valid_date_from_string(
+        self, mock_sm_client, test_guardian_api_key
+    ):
         test_inputs_valid_date_from = {
             "search_term": "machine learning",
             "date_from": "2024-01-01",
@@ -91,7 +115,9 @@ class TestAPIResults:
             assert "webUrl" in data.keys()
 
     @pytest.mark.it("Logs error for invalid date_from")
-    def test_returns_for_valid_date_from_string(self, caplog):
+    def test_returns_for_valid_date_from_string(
+        self, caplog, mock_sm_client, test_guardian_api_key
+    ):
         test_inputs_invalid_date_from = {
             "search_term": "machine learning",
             "date_from": "not_a_date",
@@ -102,7 +128,9 @@ class TestAPIResults:
         assert "Dates must be an ISO8601 date or datetime" in caplog.text
 
     @pytest.mark.it("Logs error for invalid api key")
-    def test_logs_error_invalid_api_key(self, caplog, test_api_results_inputs):
+    def test_logs_error_invalid_api_key(
+        self, caplog, test_api_results_inputs, mock_sm_client, test_guardian_api_key
+    ):
         with patch("src.streaming_data.requests.get") as mock_request:
             mock_request.return_value.status_code = 401
             with caplog.at_level(logging.ERROR):
@@ -110,7 +138,9 @@ class TestAPIResults:
             assert "Invalid api key" in caplog.text
 
     @pytest.mark.it("Logs HTTP error for other api responses")
-    def test_logs_HTTP_error(self, caplog, test_api_results_inputs):
+    def test_logs_HTTP_error(
+        self, caplog, test_api_results_inputs, mock_sm_client, test_guardian_api_key
+    ):
         with patch("src.streaming_data.requests.get") as mock_request:
             mock_request.return_value.status_code = 500
             mock_request.return_value.text = json.dumps("404 Not Found")
@@ -123,13 +153,17 @@ class TestAPIResults:
 class TestCreateQueue:
 
     @pytest.mark.it("Creates queue with input name")
-    def test_create_queue_with_input_name(self, mock_sqs_client):
+    def test_create_queue_with_input_name(
+        self, mock_sqs_client, mock_sm_client, test_guardian_api_key
+    ):
         test_queue_name = "test_queue"
         result = create_queue(test_queue_name)
         assert test_queue_name in result
 
     @pytest.mark.it("Creates queue with 3-day retention period")
-    def test_create_queue_retention_period(self, mock_sqs_client):
+    def test_create_queue_retention_period(
+        self, mock_sqs_client, mock_sm_client, test_guardian_api_key
+    ):
         test_queue_name = "test_queue"
         expected_retention_period = str(60 * 60 * 24 * 3)
         test_queue_url = create_queue(test_queue_name)
@@ -142,7 +176,9 @@ class TestCreateQueue:
         )
 
     @pytest.mark.it("Logs error if unable to create queue")
-    def test_logs_error_unable_to_create_queue(self, mock_sqs_client, caplog):
+    def test_logs_error_unable_to_create_queue(
+        self, mock_sqs_client, caplog, mock_sm_client, test_guardian_api_key
+    ):
         test_queue_name = "test_queue"
         with patch("boto3.client") as mock_sqs:
             mock_sqs.return_value.create_queue.side_effect = ClientError(
@@ -164,7 +200,12 @@ class TestStreamingData:
 
     @pytest.mark.it("Successfully posts API results to SQS queue")
     def test_successfully_posts_api_results_to_queue(
-        self, test_streaming_data_inputs, mock_sqs_client, caplog
+        self,
+        test_streaming_data_inputs,
+        mock_sqs_client,
+        caplog,
+        mock_sm_client,
+        test_guardian_api_key,
     ):
         with caplog.at_level(logging.INFO):
             streaming_data(**test_streaming_data_inputs)
@@ -172,14 +213,25 @@ class TestStreamingData:
 
     @pytest.mark.it("Data stored in SQS queue is JSON data")
     def test_queue_data_is_json(
-        self, test_streaming_data_inputs, mock_sqs_client, caplog
+        self,
+        test_streaming_data_inputs,
+        mock_sqs_client,
+        caplog,
+        mock_sm_client,
+        test_guardian_api_key,
     ):
         queue_url = streaming_data(**test_streaming_data_inputs)
         queue_contents = mock_sqs_client.receive_message(QueueUrl=queue_url)
         assert json.loads(queue_contents["Messages"][0]["Body"]) != ValueError
 
     @pytest.mark.it("Data stored in SQS queue is expected format")
-    def test_data_in_expected_format(self, test_streaming_data_inputs, mock_sqs_client):
+    def test_data_in_expected_format(
+        self,
+        test_streaming_data_inputs,
+        mock_sqs_client,
+        mock_sm_client,
+        test_guardian_api_key,
+    ):
         queue_url = streaming_data(**test_streaming_data_inputs)
         queue_contents = mock_sqs_client.receive_message(QueueUrl=queue_url)
         message_contents = json.loads(queue_contents["Messages"][0]["Body"])
@@ -192,7 +244,12 @@ class TestStreamingData:
 
     @pytest.mark.it("Logs error if unable to send message")
     def test_logs_error_if_unable_to_send_message(
-        self, test_streaming_data_inputs, mock_sqs_client, caplog
+        self,
+        test_streaming_data_inputs,
+        mock_sqs_client,
+        caplog,
+        mock_sm_client,
+        test_guardian_api_key,
     ):
         with patch("boto3.client") as mock_sqs:
             mock_sqs.return_value.send_message.side_effect = ClientError(
