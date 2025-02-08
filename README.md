@@ -49,7 +49,7 @@ The provided source code (stored in the "src" folder) and test suite (stored in 
 If you have already done the "Local environment setup", you can skip step 1 and instead deploy the application from your local environment.
 
 1. Fork and clone this repo.
-2. Store your Guardian API key in your AWS Secrets Manager with the name "guardian_api_key" with as a key-value pair with the key also named "guardian_api_key" and your Guardian API key assigned to the value.  Ensure that your AWS credentials are configured in your local development environment (e.g. your "config" and "credentials" files are set in the directory "~/.aws").
+2. Store your Guardian API key in your AWS Secrets Manager under a secret named "api_keys" as a key-value pair with the key named "guardian_api_key" and your Guardian API key assigned to the value.  Ensure that your AWS credentials are configured in your local development environment (e.g. your "config" and "credentials" files are set in the directory "~/.aws").
 3. Deploy the code as part of your application (e.g. as an AWS Lambda function).  The entry point is the function streaming_data, but you will need to include the remainder of the code as this function uses other helper functions to run as well as global variables.
 4. Pass your search_term and message_broker_ID to the streaming_data function.  You can optionally pass the date_from argument (as a datetime or a valid ISO 8601 format date string) and/or the exact_match argument (boolean).
 
