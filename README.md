@@ -60,7 +60,7 @@ Before deploying this code, it is recommended that you take a local copy to make
    make run-checks
    ```
 
-The provided source code (stored in the "src/streaming_data.py") and test suite (stored in the "test/test_streaming_data") gives a test coverage of 100%.  If you make any further refinements to the source code, you should ensure these are tested prior to deployment.
+The provided source code (stored in the file "src/streaming_data.py") and test suite (stored in the file "test/test_streaming_data") gives a test coverage of 100%.  If you make any further refinements to the source code, you should ensure these are tested prior to deployment.
 
 ## Command line deployment
 
