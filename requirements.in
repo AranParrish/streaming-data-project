@@ -1,5 +1,5 @@
 boto3
-moto[sqs]
+moto[sqs, secretsmanager]
 pytest
 pytest-cov
 pytest-testdox
