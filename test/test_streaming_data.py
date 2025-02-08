@@ -35,7 +35,7 @@ def mock_sm_client(mock_aws_credentials):
 @pytest.fixture(scope="function")
 def test_guardian_api_key(mock_sm_client):
     mock_sm_client.create_secret(
-        Name="guardian_api_key",
+        Name="api_keys",
         SecretString='{"guardian_api_key": "test"}',
     )
 
@@ -51,10 +51,11 @@ class TestGetAPIKey:
 
     @pytest.mark.it("Retrieves key for valid secret name")
     def tests_retrieve_secret_valid_name(self, mock_sm_client, test_guardian_api_key):
-        secret_name = "guardian_api_key"
+        secret_name = "api_keys"
+        secret_key = "guardian_api_key"
         response = get_api_key(secret_name)
         assert isinstance(response, dict)
-        assert response["guardian_api_key"] == "test"
+        assert response[secret_key] == "test"
 
     @pytest.mark.it("Logs ResourceNotFoundException for invalid secret name")
     def test_retrieve_secret_invalid_name(
@@ -248,11 +249,12 @@ class TestStreamingData:
         test_streaming_data_inputs,
         mock_sqs_client,
         caplog,
-        mock_sm_client,
-        test_guardian_api_key,
     ):
-        with patch("boto3.client") as mock_sqs:
-            mock_sqs.return_value.send_message.side_effect = ClientError(
+        with patch("boto3.client") as mock_client:
+            mock_client.return_value.get_secret_value.return_value = {
+                "SecretString": json.dumps({"guardian_api_key": "test"})
+            }
+            mock_client.return_value.send_message.side_effect = ClientError(
                 {
                     "Error": {
                         "Code": "AWS.SimpleQueueService.NonExistentQueue",

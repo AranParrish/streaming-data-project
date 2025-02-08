@@ -5,7 +5,7 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 BASE_URL = "https://content.guardianapis.com/search?order-by=newest&q="
-SECRET_NAME = "guardian_api_key"
+SECRET_NAME = "api_keys"
 SECRET_KEY = "guardian_api_key"
 
 
@@ -32,9 +32,6 @@ def get_api_key(secret) -> dict:
         logger.error(e)
 
 
-API_KEY = get_api_key(secret=SECRET_NAME)[SECRET_KEY]
-
-
 def api_results(search_term, date_from, exact_match) -> list:
     """Gets search term results from Guardian API
 
@@ -56,12 +53,13 @@ def api_results(search_term, date_from, exact_match) -> list:
         Logs the response text for all other errors.
     """
 
+    guardian_api_key = get_api_key(secret=SECRET_NAME)[SECRET_KEY]
     search_results = []
     html_search_query = search_term.replace(" ", "%20")
     if exact_match:
         html_search_query = f'"{html_search_query}"'
 
-    api_url = "".join([BASE_URL, html_search_query, "&api-key=", API_KEY])
+    api_url = "".join([BASE_URL, html_search_query, "&api-key=", guardian_api_key])
 
     if date_from:
         api_url = "".join([api_url, "&from-date=", date_from])
