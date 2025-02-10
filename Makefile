@@ -21,8 +21,7 @@ create-environment:
 	)
 	@echo ">>> Setting up VirtualEnv."
 	( \
-	    $(PIP) install -q virtualenv virtualenvwrapper; \
-	    virtualenv venv --python=$(PYTHON); \
+	    $(PYTHON) -m venv venv; \
 	)
 
 # Define utility variable to help calling Python from the virtual environment
@@ -81,3 +80,31 @@ check-coverage:
 
 ## Run all checks
 run-checks: security-test run-black unit-test check-coverage
+
+################################################################################################################
+
+## Create lambda layer for cloud deployment
+
+# Create lambda layer virtual environment
+
+lambda-venv:
+	$(PYTHON) -m venv lambda_venv;
+
+# Define utility variable to help calling Python from the lamnda virtual environment
+ACTIVATE_LAMBDA_ENV := source lambda_venv/bin/activate
+
+# Execute python related functionalities from within the lambda's virtual environment
+define execute_in_lambda_env
+	$(ACTIVATE_LAMBDA_ENV) && $1
+endef
+
+lambda-layer: lambda-venv
+	rm -rf lambda_layer
+	mkdir -p lambda_layer/python
+	$(call execute_in_lambda_env, $(PIP) install pip-tools)
+	$(call execute_in_lambda_env, pip-compile requirements.in)
+	$(call execute_in_lambda_env, $(PIP) install -r ./requirements.txt -t lambda_layer/python/lib/python3.11/site-packages)
+	cp src/streaming_data.py lambda_layer/python/streaming_data.py
+	cd lambda_layer && zip -r ../lambda_layer.zip . && cd ..
+	rm -rf lambda_layer
+	@echo "Lambda layer created in file lambda_layer.zip"
