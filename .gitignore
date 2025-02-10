@@ -1,7 +1,8 @@
-venv
+**venv
 __pycache**
 .pytest**
 .env*
 .terraform*
 *.vscode*
 *.coverage*
+.DS_Store
