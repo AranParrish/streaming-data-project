@@ -5,7 +5,7 @@
 #################################################################################
 
 PROJECT_NAME = streaming-data-project
-PYTHON_INTERPRETER = python
+PYTHON = python
 WD=$(shell pwd)
 PYTHONPATH=${WD}
 SHELL := /bin/bash
@@ -17,12 +17,12 @@ create-environment:
 	@echo ">>> About to create environment: $(PROJECT_NAME)..."
 	@echo ">>> check python3 version"
 	( \
-		$(PYTHON_INTERPRETER) --version; \
+		$(PYTHON) --version; \
 	)
 	@echo ">>> Setting up VirtualEnv."
 	( \
 	    $(PIP) install -q virtualenv virtualenvwrapper; \
-	    virtualenv venv --python=$(PYTHON_INTERPRETER); \
+	    virtualenv venv --python=$(PYTHON); \
 	)
 
 # Define utility variable to help calling Python from the virtual environment
