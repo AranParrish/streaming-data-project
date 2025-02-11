@@ -99,12 +99,11 @@ define execute_in_lambda_env
 endef
 
 lambda-layer: lambda-venv
-	rm -rf lambda_layer
-	mkdir -p lambda_layer/python
+	mkdir python
 	$(call execute_in_lambda_env, $(PIP) install pip-tools)
 	$(call execute_in_lambda_env, pip-compile requirements.in)
-	$(call execute_in_lambda_env, $(PIP) install -r ./requirements.txt -t lambda_layer/python/lib/python3.11/site-packages)
-	cp src/streaming_data.py lambda_layer/python/streaming_data.py
-	cd lambda_layer && zip -r ../lambda_layer.zip . && cd ..
-	rm -rf lambda_layer
+	$(call execute_in_lambda_env, $(PIP) install -r ./requirements.txt -t python/lib/python3.11/site-packages)
+	cp src/streaming_data.py python/streaming_data.py
+	zip -r lambda_layer.zip python
+	rm -rf python
 	@echo "Lambda layer created in file lambda_layer.zip"
