@@ -22,7 +22,7 @@ The results stored are up to the 10 most recent articles.  Data is persisted in 
                 "webTitle": "string",
                 "webUrl": "string"  
             },  
-            ...  
+            "..."  
         ]  
 }
 ```
@@ -34,7 +34,7 @@ The results stored are up to the 10 most recent articles.  Data is persisted in 
 3. An [AWS account](https://signin.aws.amazon.com/signup?request_type=register)
 4. Make installed on your local machine.  Search online for instructions relevant to your operating system.
 
-## Local enviornment setup
+## Local environment setup
 
 Before deploying this code, it is recommended that you take a local copy to make further developments as needed (e.g. to adapt the code for your particular usage) and to run the test suite to check for any errors.
 
@@ -53,7 +53,8 @@ Before deploying this code, it is recommended that you take a local copy to make
    make dev-setup
    ```
 
-   This will install "bandit" and "safety" to do security tests, as well as "black" to ensure code is PEP8 compliant, and finally "coverage" to check test coverage.  Note that you will need a safety account (you should be prompted to register or login when first attempting to run the test suite, as detailed in stage 5 below).
+   This will install "bandit" and "safety" to do security tests, as well as "black" to ensure code is PEP8 compliant, and finally "coverage" to check test coverage.  Note that you will need a safety account (you should be prompted to register or login when first attempting to run the test suite, as detailed in stage 4 below).
+
 4. To execute the full range of checks (security tests, PEP8 compliance, and the test suite), run:
 
    ```sh
@@ -77,11 +78,11 @@ To deploy the application from the command line on your local machine, you will 
 3. Run the execute_from_cli.py script from the src folder with the below arguments:
 
    - search_term (required) - Your search query. Provided as a string in quotes with terms separated by a single space as the first positional argument.
-   - message_broker_id (required) - Your ID used to identify the results in the AWS SQS queue. Provided as a string enclosed in quotes as the second position argument.
+   - message_broker_id (required) - Your ID used to identify the results in the AWS SQS queue. Provided as a string enclosed in quotes as the second positional argument.
    - -d or --date_from "YYYY-MM-DD" (optional) - Restrict search results to those from a specific date.  Provided as a string enclosed in quotes in ISO 8601 format, such as YYYY-MM-DD.
    - -e or --exact_match (optional flag) - Run the search query as an exact match.  This is a flag, so providing either -e or --exact_match will do the query as an exact match, omitting will not.
     
-    Example usage:
+    Example usage (executed from the root directory):
 
     ```sh
     python src/execute_from_cli.py "machine learing" "guardian_content" --date_from "2025-01-01" -e
