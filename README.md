@@ -85,7 +85,7 @@ To deploy the application from the command line on your local machine, you will 
     Example usage (executed from the root directory):
 
     ```sh
-    python src/execute_from_cli.py "machine learing" "guardian_content" --date_from "2025-01-01" -e
+    python src/execute_from_cli.py "machine learning" "guardian_content" --date_from "2025-01-01" -e
     ```
    
    After successfully executing, your search results will be stored in an AWS SQS queue named "guardian_content_queue" with the passed in message broker ID.
